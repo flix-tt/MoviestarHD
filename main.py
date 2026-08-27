@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 from database import connect, save_movies
 from domain_fetcher import discover_active_domain
-from movie_parser import DEFAULT_SOURCES, discover_category_sources, scrape_source
+from movie_parser import DEFAULT_SOURCES, scrape_source
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -31,10 +31,6 @@ def main() -> int:
     args = build_parser().parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     sources = args.urls or list(DEFAULT_SOURCES)
-    if not args.urls and not args.head_url:
-        discovered = discover_category_sources("https://new.katmoviehd.top/")
-        if discovered:
-            sources = discovered
     if args.head_url:
         allowed_hosts = {urlparse(url).netloc.lower().split(":", 1)[0] for url in sources}
         sources = [discover_active_domain(args.head_url, allowed_hosts or None)]
