@@ -18,6 +18,7 @@ DEFAULT_SOURCES = (
     "https://new.katmoviehd.top/category/tv-shows/",
     "https://new.katmoviehd.top/category/tv-series-dubbed/korean-drama/",
     "https://new.katmoviehd.top/category/anime-dubbed/",
+    "https://new.katmoviehd.top/category/animated/",
 )
 
 
