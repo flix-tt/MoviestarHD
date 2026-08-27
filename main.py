@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 from database import connect, save_movies
 from domain_fetcher import discover_active_domain
-from movie_parser import DEFAULT_SOURCES, scrape_source
+from movie_parser import DEFAULT_SOURCES, enrich_records, scrape_source
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -47,6 +47,7 @@ def main() -> int:
     for url in source_urls:
         results.extend(scrape_source(url, max_pages=args.pages))
     results = list({item["url"]: item for item in results if item.get("url")}.values())
+    results = enrich_records(results)
 
     with closing(connect(args.database)) as connection:
         saved = save_movies(connection, results)

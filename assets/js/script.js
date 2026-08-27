@@ -380,12 +380,13 @@ async function loadScrapedCatalog() {
         type,
         year: Number(record.year) || new Date().getFullYear(),
         poster: record.poster || getTmdbPoster(''),
-        short: record.description || 'Freshly fetched catalog entry.',
-        synopsis: record.description || 'Freshly fetched catalog entry.',
+        short: record.description || record.review || 'Freshly fetched catalog entry.',
+        synopsis: record.description || record.review || 'Freshly fetched catalog entry.',
+        cast: Array.isArray(record.cast) ? record.cast : [],
+        review: record.review || '',
         genres: [type === 'animation' ? 'Animation' : type === 'drama' ? 'Drama' : 'Movie'],
-        cast: [],
-        runtime: type === 'drama' ? 'Series' : 'Movie',
-        rating: 'N/A',
+        runtime: record.duration || (type === 'drama' ? 'Series' : 'Movie'),
+        rating: record.rating || 'N/A',
         trailer: '',
         sourceUrl: record.url || ''
       });

@@ -29,6 +29,10 @@ class MovieItem:
     poster: str = ""
     year: str = ""
     source: str = ""
+    cast: list[str] | None = None
+    duration: str = ""
+    rating: str = ""
+    review: str = ""
 
 
 def _text(node: Any) -> str:
@@ -57,6 +61,15 @@ def _image_url(image: Any, page_url: str) -> str:
     if srcset:
         return urljoin(page_url, srcset.split(",")[-1].strip().split(" ")[0])
     return ""
+
+
+def _detail_value(text: str, label: str, next_labels: str) -> str:
+    match = re.search(
+        rf"(?:{label})\s*:?\s*(.*?)(?=\s+(?:{next_labels})\s*:|$)",
+        text,
+        re.I,
+    )
+    return re.sub(r"\s+", " ", match.group(1)).strip(" .:-") if match else ""
 
 
 def _json_ld_items(soup: BeautifulSoup) -> Iterable[dict[str, Any]]:
@@ -183,7 +196,17 @@ def parse_detail(html: str, page_url: str) -> MovieItem:
         else image if isinstance(image, str) else ""
     )
     title = str(data.get("name") or _first_meta(soup, "og:title", "twitter:title") or _text(soup.find("h1")))
-    description = str(data.get("description") or _first_meta(soup, "description", "og:description"))
+    page_text = _text(soup.select_one("main") or soup.body)
+    description = _detail_value(page_text, "DESCRIPTION", "REVIEW|Share|Leave a Comment")
+    if not description:
+        description = _detail_value(page_text, "Storyline", "More Info|Review|Share")
+    if not description:
+        description = str(data.get("description") or _first_meta(soup, "description", "og:description"))
+    cast_text = _detail_value(page_text, "Starring|Stars", "Creators|Director|Genres|Quality|Language")
+    cast_names = [name.strip() for name in re.split(r",|\s+and\s+", cast_text) if name.strip()]
+    rating_match = re.search(r"(?:IMDb\s+)?Rating\s*:?\s*-?\s*([0-9]+(?:\.[0-9]+)?)\s*/\s*10", page_text, re.I)
+    duration = _detail_value(page_text, "Runtime|Duration", "IMDb Rating|Director|Stars|Starring|Genres|Quality|Language")
+    review = _detail_value(page_text, "Review(?: of [^:]+)?", "Share|Leave a Comment")
     year = str(data.get("dateCreated") or data.get("datePublished") or "")[:4]
     return MovieItem(
         title=title,
@@ -192,6 +215,10 @@ def parse_detail(html: str, page_url: str) -> MovieItem:
         poster=urljoin(page_url, image_url or _first_meta(soup, "og:image")),
         year=year,
         source=page_url,
+        cast=cast_names,
+        duration=duration,
+        rating=rating_match.group(1) if rating_match else "",
+        review=review,
     )
 
 
@@ -229,3 +256,24 @@ def scrape_source(source_url: str, max_pages: int = 1) -> list[dict[str, Any]]:
     except Exception:
         LOGGER.exception("Could not parse %s", source_url)
     return []
+
+
+def enrich_records(records: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Update listing records with metadata from their detail pages."""
+    enriched: list[dict[str, Any]] = []
+    with requests.Session() as session:
+        for record in records:
+            updated = dict(record)
+            try:
+                detail = parse_detail(fetch_html(str(record["url"]), session=session), str(record["url"]))
+                detail_data = asdict(detail)
+                for field in ("description", "poster", "year", "cast", "duration", "rating", "review"):
+                    value = detail_data.get(field)
+                    if value:
+                        updated[field] = value
+            except requests.RequestException as exc:
+                LOGGER.warning("Could not enrich %s: %s", record.get("url", ""), exc)
+            except Exception:
+                LOGGER.exception("Could not parse detail %s", record.get("url", ""))
+            enriched.append(updated)
+    return enriched
