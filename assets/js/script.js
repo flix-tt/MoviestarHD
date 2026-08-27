@@ -346,62 +346,11 @@ function tmdbResultToItem(result) {
 }
 
 async function searchTmdbCatalog(term, filter='all') {
-  const query = term.trim();
-  if (!query || query.length < 2) return [];
-
-  try {
-    const response = await fetch(`/api/tmdb-search?query=${encodeURIComponent(query)}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      return [];
-    }
-
-    const data = await response.json();
-    const results = (data.results || [])
-      .map(tmdbResultToItem)
-      .filter(Boolean);
-
-    if (filter === 'all') {
-      return results.slice(0, 8);
-    }
-
-    const filtered = results.filter(item => item.type === filter);
-    return filtered.length ? filtered.slice(0, 8) : results.slice(0, 8);
-  } catch (error) {
-    console.warn('TMDB fallback search failed:', error);
-    return [];
-  }
+  return [];
 }
 
 async function loadLatestTmdbCatalog() {
-  try {
-    const response = await fetch('/api/tmdb-latest', {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' }
-    });
-
-    if (!response.ok) return;
-
-    const data = await response.json();
-    const latestItems = (data.results || [])
-      .map(tmdbResultToItem)
-      .filter(Boolean);
-    const existingTitles = new Set(items.map(item => item.title.toLowerCase()));
-
-    latestItems.forEach(item => {
-      if (!existingTitles.has(item.title.toLowerCase())) {
-        items.push(item);
-        existingTitles.add(item.title.toLowerCase());
-      }
-    });
-  } catch (error) {
-    console.warn('TMDB latest catalog unavailable:', error);
-  }
+  return [];
 }
 
 async function loadScrapedCatalog() {
@@ -412,6 +361,7 @@ async function loadScrapedCatalog() {
     const records = await response.json();
     if (!Array.isArray(records)) return;
 
+    items.length = 0;
     const existingTitles = new Set(items.map(item => item.title.toLowerCase()));
     records.forEach(record => {
       const title = String(record.title || '').trim();
@@ -565,8 +515,7 @@ async function render(filter='all', searchTerm=''){
     if (localMatches.length) {
       list = localMatches;
     } else {
-      const tmdbMatches = await searchTmdbCatalog(trimmed, filter);
-      list = tmdbMatches.length ? tmdbMatches : [];
+      list = [];
     }
   }
 
@@ -697,7 +646,6 @@ if(searchInput){
 // initial
 if (document.getElementById('gallery')) {
   loadScrapedCatalog()
-    .then(() => loadLatestTmdbCatalog())
     .finally(() => {
       setCatalogSeo();
       void render();

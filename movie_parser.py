@@ -77,6 +77,25 @@ def _looks_like_media_page(url: str, title: str) -> bool:
     )
 
 
+def discover_category_sources(home_url: str) -> list[str]:
+    """Return same-host category feeds linked from the live home page."""
+    try:
+        soup = BeautifulSoup(fetch_html(home_url), "html.parser")
+    except requests.RequestException as exc:
+        LOGGER.warning("Could not discover categories from %s: %s", home_url, exc)
+        return []
+
+    home_host = urlparse(home_url).netloc.lower()
+    sources: list[str] = []
+    seen: set[str] = set()
+    for link in soup.select('a[href*="/category/"]'):
+        candidate = urljoin(home_url, str(link.get("href", ""))).rstrip("/") + "/"
+        if urlparse(candidate).netloc.lower() == home_host and candidate not in seen:
+            sources.append(candidate)
+            seen.add(candidate)
+    return sources
+
+
 def parse_listing(html: str, source_url: str) -> list[MovieItem]:
     """Extract likely media pages from one listing page using generic HTML signals."""
     soup = BeautifulSoup(html, "html.parser")
