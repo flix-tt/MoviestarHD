@@ -1,0 +1,28 @@
+User-agent: *
+Allow: /
+Allow: /sitemap.xml
+Allow: /sitemap.html
+Allow: /index.html
+Allow: /details.html
+Allow: /download.html
+Allow: /480p.html
+Allow: /assets/
+Allow: /google1297fa252f4d7cf7.html
+Disallow: /config/
+Disallow: /docs/
+Disallow: /public/
+Crawl-delay: 0
+
+Sitemap: https://moviestarhd.netlify.app/sitemap.xml
+
+User-agent: AdsBot-Google
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+# Prevent access to sensitive paths
+Disallow: /admin/
+Disallow: /*.json$
+Disallow: /*.php$
+Disallow: /*?*

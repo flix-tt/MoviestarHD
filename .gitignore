@@ -1,0 +1,9 @@
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.env
+*.sqlite3
+scraped_movies.json
+TMDB_API_KEY=your_real_tmdb_key_here.txt
+npm-debug.log*
