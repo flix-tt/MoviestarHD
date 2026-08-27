@@ -59,7 +59,19 @@ def _looks_like_media_page(url: str, title: str) -> bool:
     if not path or path == "/" or urlparse(url).fragment or url.endswith("#"):
         return False
     haystack = f"{path} {title.lower()}"
-    return any(word in haystack for word in ("movie", "film", "series", "season", "episode", "drama"))
+    return any(
+        word in haystack
+        for word in (
+            "movie",
+            "film",
+            "series",
+            "season",
+            "episode",
+            "drama",
+            "animation",
+            "anime",
+        )
+    )
 
 
 def parse_listing(html: str, source_url: str) -> list[MovieItem]:
