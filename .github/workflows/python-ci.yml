@@ -1,0 +1,63 @@
+name: Python CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-python:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Compile Python modules
+        run: python -m py_compile main.py movie_parser.py link_bypass.py domain_fetcher.py database.py
+
+      - name: Run parser and database smoke test
+        run: |
+          python - <<'PY'
+          import os
+          import tempfile
+          from database import connect, save_movie
+          from movie_parser import parse_detail, parse_listing
+
+          items = parse_listing(
+              '<article><a href="/movie/example-film-2026">Example Film 2026</a></article>',
+              'https://example.test/',
+          )
+          assert len(items) == 1 and items[0].year == '2026'
+
+          item = parse_detail(
+              '<script type="application/ld+json">'
+              '{"@type":"Movie","name":"Example Film",'
+              '"datePublished":"2026-01-01"}</script>',
+              'https://example.test/movie/example',
+          )
+          assert item.title == 'Example Film' and item.year == '2026'
+
+          with tempfile.NamedTemporaryFile(suffix='.sqlite3', delete=False) as handle:
+              database_path = handle.name
+          try:
+              connection = connect(database_path)
+              movie = {"title": "Example Film", "url": "https://example.test/movie/1"}
+              assert save_movie(connection, movie) is True
+              assert save_movie(connection, movie) is False
+              connection.close()
+          finally:
+              if os.path.exists(database_path):
+                  os.unlink(database_path)
+          print("smoke test passed")
+          PY
