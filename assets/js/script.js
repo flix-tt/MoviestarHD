@@ -355,7 +355,8 @@ async function loadLatestTmdbCatalog() {
 
 async function loadScrapedCatalog() {
   try {
-    const response = await fetch('/scraped_movies.json', { cache: 'no-store' });
+    const catalogUrl = new URL('scraped_movies.json', document.baseURI).href;
+    const response = await fetch(`${catalogUrl}?v=${Date.now()}`, { cache: 'no-store' });
     if (!response.ok) return;
 
     const records = await response.json();
