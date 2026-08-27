@@ -39,6 +39,10 @@ def _text(node: Any) -> str:
     return " ".join(node.get_text(" ", strip=True).split()) if node else ""
 
 
+def _clean_branding(value: str) -> str:
+    return re.sub(r"katmovie(?:hd)?(?:-hd)?", "MovieStarHD", value, flags=re.I)
+
+
 def _first_meta(soup: BeautifulSoup, *names: str) -> str:
     for name in names:
         node = soup.find("meta", attrs={"name": name}) or soup.find(
@@ -197,16 +201,16 @@ def parse_detail(html: str, page_url: str) -> MovieItem:
     )
     title = str(data.get("name") or _first_meta(soup, "og:title", "twitter:title") or _text(soup.find("h1")))
     page_text = _text(soup.select_one("main") or soup.body)
-    description = _detail_value(page_text, "DESCRIPTION", "REVIEW|Share|Leave a Comment")
+    description = _clean_branding(_detail_value(page_text, "DESCRIPTION", "REVIEW|Share|Leave a Comment"))
     if not description:
-        description = _detail_value(page_text, "Storyline", "More Info|Review|Share")
+        description = _clean_branding(_detail_value(page_text, "Storyline", "More Info|Review|Share"))
     if not description:
         description = str(data.get("description") or _first_meta(soup, "description", "og:description"))
     cast_text = _detail_value(page_text, "Starring|Stars", "Creators|Director|Genres|Quality|Language")
     cast_names = [name.strip() for name in re.split(r",|\s+and\s+", cast_text) if name.strip()]
     rating_match = re.search(r"(?:IMDb\s+)?Rating\s*:?\s*-?\s*([0-9]+(?:\.[0-9]+)?)\s*/\s*10", page_text, re.I)
     duration = _detail_value(page_text, "Runtime|Duration", "IMDb Rating|Director|Stars|Starring|Genres|Quality|Language")
-    review = _detail_value(page_text, "Review(?: of [^:]+)?", "Share|Leave a Comment")
+    review = _clean_branding(_detail_value(page_text, "Review(?: of [^:]+)?", "Share|Leave a Comment"))
     year = str(data.get("dateCreated") or data.get("datePublished") or "")[:4]
     return MovieItem(
         title=title,

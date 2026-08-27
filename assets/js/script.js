@@ -260,6 +260,10 @@ function slugify(title) {
   return title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
+function cleanCatalogBranding(value) {
+  return String(value || '').replace(/katmovie(?:hd)?(?:-hd)?/gi, 'MovieStarHD');
+}
+
 function detailsUrl(item) {
   const params = new URLSearchParams({ title: slugify(item.title) });
   if (item.tmdb && item.id) {
@@ -381,10 +385,10 @@ async function loadScrapedCatalog() {
         type,
         year: Number(record.year) || new Date().getFullYear(),
         poster: record.poster || getTmdbPoster(''),
-        short: record.description || record.review || 'Freshly fetched catalog entry.',
-        synopsis: record.description || record.review || 'Freshly fetched catalog entry.',
+        short: cleanCatalogBranding(record.description || record.review || 'Freshly fetched catalog entry.'),
+        synopsis: cleanCatalogBranding(record.description || record.review || 'Freshly fetched catalog entry.'),
         cast: Array.isArray(record.cast) ? record.cast : [],
-        review: record.review || '',
+        review: cleanCatalogBranding(record.review || ''),
         genres: [type === 'animation' ? 'Animation' : type === 'drama' ? 'Drama' : 'Movie'],
         runtime: record.duration || (type === 'drama' ? 'Series' : 'Movie'),
         rating: record.rating || 'N/A',
