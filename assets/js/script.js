@@ -361,16 +361,16 @@ async function loadScrapedCatalog() {
     const records = await response.json();
     if (!Array.isArray(records)) return;
 
-    items.length = 0;
     const existingTitles = new Set(items.map(item => item.title.toLowerCase()));
     records.forEach(record => {
       const title = String(record.title || '').trim();
       if (!title || existingTitles.has(title.toLowerCase())) return;
 
       const searchable = `${title} ${record.url || ''}`.toLowerCase();
-      const type = /anime|animation/.test(searchable)
+      const source = String(record.source || '').toLowerCase();
+      const type = /anime|animation|animated|cartoon/.test(`${searchable} ${source}`)
         ? 'animation'
-        : /drama|series|season|episode|tv-show/.test(searchable)
+        : /drama|series|season|episode|tv-show|television/.test(`${searchable} ${source}`)
           ? 'drama'
           : 'movie';
 
@@ -1536,13 +1536,16 @@ document.addEventListener('dragstart', (event) => {
   }
 });
 
-// run details renderer if present
-if(document.getElementById('details-root')) renderDetails();
-if(document.getElementById('download-root')){
-  const params = new URLSearchParams(location.search);
-  if (window.location.pathname.endsWith('480p.html')) {
-    render480pPage();
-  } else {
-    renderDownloadPage();
-  }
+// Details and download pages need the scraped catalog before resolving URL items.
+if(document.getElementById('details-root') || document.getElementById('download-root')){
+  loadScrapedCatalog().finally(() => {
+    if(document.getElementById('details-root')) renderDetails();
+    if(document.getElementById('download-root')){
+      if (window.location.pathname.endsWith('480p.html')) {
+        render480pPage();
+      } else {
+        renderDownloadPage();
+      }
+    }
+  });
 }

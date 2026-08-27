@@ -45,6 +45,20 @@ def _first_meta(soup: BeautifulSoup, *names: str) -> str:
     return ""
 
 
+def _image_url(image: Any, page_url: str) -> str:
+    """Read normal and lazy-loaded image attributes from a listing card."""
+    if not image:
+        return ""
+    for attribute in ("src", "data-src", "data-lazy-src", "data-original"):
+        value = str(image.get(attribute, "")).strip()
+        if value:
+            return urljoin(page_url, value)
+    srcset = str(image.get("srcset", "")).strip()
+    if srcset:
+        return urljoin(page_url, srcset.split(",")[-1].strip().split(" ")[0])
+    return ""
+
+
 def _json_ld_items(soup: BeautifulSoup) -> Iterable[dict[str, Any]]:
     for script in soup.select('script[type="application/ld+json"]'):
         try:
@@ -113,10 +127,15 @@ def parse_listing(html: str, source_url: str) -> list[MovieItem]:
         if not _looks_like_media_page(href, title):
             continue
 
-        card = link.find_parent(["article", "li", "div"])
+        card = link.find_parent(["article", "li"])
+        if not card:
+            card = link.find_parent("div")
         image = card.find("img") if card else link.find("img")
-        description = _text(card.find("p")) if card else ""
-        poster = urljoin(source_url, str(image.get("src", ""))) if image else ""
+        description_node = card.select_one(
+            ".entry-summary, .post-excerpt, .excerpt, p"
+        ) if card else None
+        description = _text(description_node)
+        poster = _image_url(image, source_url)
         year_match = re.search(r"\b(19|20)\d{2}\b", f"{title} {description}")
         items.append(
             MovieItem(
