@@ -404,6 +404,48 @@ async function loadLatestTmdbCatalog() {
   }
 }
 
+async function loadScrapedCatalog() {
+  try {
+    const response = await fetch('/scraped_movies.json', { cache: 'no-store' });
+    if (!response.ok) return;
+
+    const records = await response.json();
+    if (!Array.isArray(records)) return;
+
+    const existingTitles = new Set(items.map(item => item.title.toLowerCase()));
+    records.forEach(record => {
+      const title = String(record.title || '').trim();
+      if (!title || existingTitles.has(title.toLowerCase())) return;
+
+      const searchable = `${title} ${record.url || ''}`.toLowerCase();
+      const type = /anime|animation/.test(searchable)
+        ? 'animation'
+        : /drama|series|season|episode|tv-show/.test(searchable)
+          ? 'drama'
+          : 'movie';
+
+      items.push({
+        id: `scraped-${items.length + 1}`,
+        title,
+        type,
+        year: Number(record.year) || new Date().getFullYear(),
+        poster: record.poster || getTmdbPoster(''),
+        short: record.description || 'Freshly fetched catalog entry.',
+        synopsis: record.description || 'Freshly fetched catalog entry.',
+        genres: [type === 'animation' ? 'Animation' : type === 'drama' ? 'Drama' : 'Movie'],
+        cast: [],
+        runtime: type === 'drama' ? 'Series' : 'Movie',
+        rating: 'N/A',
+        trailer: '',
+        sourceUrl: record.url || ''
+      });
+      existingTitles.add(title.toLowerCase());
+    });
+  } catch (error) {
+    console.warn('Scraped catalog unavailable:', error);
+  }
+}
+
 function setCatalogSeo() {
   const homeUrl = new URL('index.html', location.href).href;
   setCanonical(homeUrl);
@@ -654,8 +696,12 @@ if(searchInput){
 
 // initial
 if (document.getElementById('gallery')) {
-  setCatalogSeo();
-  loadLatestTmdbCatalog().finally(() => { void render(); });
+  loadScrapedCatalog()
+    .then(() => loadLatestTmdbCatalog())
+    .finally(() => {
+      setCatalogSeo();
+      void render();
+    });
 }
 
 // Keep the hero focused: show only the five newest featured catalog titles.

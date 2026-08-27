@@ -14,7 +14,10 @@ from bs4 import BeautifulSoup
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_SOURCES = (
-    "https://new.katmoviehd.top/movie-hindi-dubbed/",
+    "https://new.katmoviehd.top/category/hollywood-eng/",
+    "https://new.katmoviehd.top/category/tv-shows/",
+    "https://new.katmoviehd.top/category/tv-series-dubbed/korean-drama/",
+    "https://new.katmoviehd.top/category/anime-dubbed/",
 )
 
 
@@ -81,7 +84,9 @@ def parse_listing(html: str, source_url: str) -> list[MovieItem]:
     seen: set[str] = set()
     source_host = urlparse(source_url).netloc.lower()
 
-    for link in soup.select("a[href]"):
+    post_links = soup.select("h2 a")
+    candidate_links = post_links if post_links else soup.select("a[href]")
+    for link in candidate_links:
         title = _text(link)
         href = urljoin(source_url, str(link.get("href", "")))
         if not title or href in seen or urlparse(href).netloc.lower() != source_host:
