@@ -14,8 +14,7 @@ from bs4 import BeautifulSoup
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_SOURCES = (
-    "https://katmovieshd.net/",
-    "https://katmoviehd.fans/",
+    "https://new.katmoviehd.top/movie-hindi-dubbed/",
 )
 
 
@@ -57,6 +56,8 @@ def _json_ld_items(soup: BeautifulSoup) -> Iterable[dict[str, Any]]:
 
 def _looks_like_media_page(url: str, title: str) -> bool:
     path = urlparse(url).path.lower()
+    if not path or path == "/" or urlparse(url).fragment or url.endswith("#"):
+        return False
     haystack = f"{path} {title.lower()}"
     return any(word in haystack for word in ("movie", "film", "series", "season", "episode", "drama"))
 
