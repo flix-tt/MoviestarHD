@@ -28,7 +28,7 @@ Install dependencies and run it from this folder:
 
 ```powershell
 python -m pip install -r requirements.txt
-python main.py --url https://www.katmoviehd.top/movie-hindi-dubbed/ --database movies.sqlite3 --output scraped_movies.json
+python main.py --url https://new.katmoviehd.top/movie-hindi-dubbed/ --database movies.sqlite3 --output scraped_movies.json
 ```
 
 `katmovieshd.net` is currently a landing page that redirects to the active catalog domain, so scrape the active listing URL above. The listing contains movie, drama/series, and animation entries; use `--url` again for any additional authorized category listings.
