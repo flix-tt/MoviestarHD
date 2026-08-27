@@ -132,6 +132,24 @@ def parse_listing(html: str, source_url: str) -> list[MovieItem]:
     return items
 
 
+def find_next_page(html: str, page_url: str) -> str | None:
+    """Find a normal pagination link exposed by the listing page."""
+    soup = BeautifulSoup(html, "html.parser")
+    link = soup.select_one('link[rel="next"], a[rel="next"]')
+    if not link:
+        link = next(
+            (
+                candidate
+                for candidate in soup.select("a[href]")
+                if re.search(r"\b(next|older posts|more posts)\b", _text(candidate), re.I)
+            ),
+            None,
+        )
+    if not link or not link.get("href"):
+        return None
+    return urljoin(page_url, str(link["href"]))
+
+
 def parse_detail(html: str, page_url: str) -> MovieItem:
     """Extract metadata from a detail page, preferring Schema.org JSON-LD."""
     soup = BeautifulSoup(html, "html.parser")
@@ -170,10 +188,23 @@ def fetch_html(url: str, session: requests.Session | None = None, timeout: int =
     return response.text
 
 
-def scrape_source(source_url: str) -> list[dict[str, Any]]:
+def scrape_source(source_url: str, max_pages: int = 1) -> list[dict[str, Any]]:
+    """Scrape a listing and its ordinary next-page links up to ``max_pages``."""
+    results: list[dict[str, Any]] = []
+    visited: set[str] = set()
+    current_url = source_url
     try:
-        html = fetch_html(source_url)
-        return [asdict(item) for item in parse_listing(html, source_url)]
+        for _ in range(max(max_pages, 1)):
+            if current_url in visited:
+                break
+            visited.add(current_url)
+            html = fetch_html(current_url)
+            results.extend(asdict(item) for item in parse_listing(html, current_url))
+            next_url = find_next_page(html, current_url)
+            if not next_url:
+                break
+            current_url = next_url
+        return results
     except requests.RequestException as exc:
         LOGGER.warning("Could not fetch %s: %s", source_url, exc)
     except Exception:

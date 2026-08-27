@@ -40,3 +40,5 @@ python main.py --head-url https://katmovieshd.net/ --archive-template "{base}/pa
 ```
 
 `database.py` stores records in SQLite and inserts only new titles/URLs. Existing records are never overwritten or deleted. The generic parser may need site-specific selectors when a website's HTML changes. The domain resolver only accepts hosts explicitly allowed by the caller and does not bypass access controls.
+
+The default scraper discovers same-host category feeds and follows up to three normal pagination pages per feed. Use `--pages N` to change that limit. It collects metadata and only media URLs explicitly present in authorized HTML; it does not download third-party videos or bypass DRM, CAPTCHA, paywalls, countdowns, login, or other protected access.

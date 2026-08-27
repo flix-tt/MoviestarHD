@@ -21,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--archive-template", help="Listing template containing {year} and {page} placeholders.")
     parser.add_argument("--year-start", type=int, default=2001)
     parser.add_argument("--year-end", type=int, default=2026)
-    parser.add_argument("--pages", type=int, default=1, help="Pages per archive year when --archive-template is used.")
+    parser.add_argument("--pages", type=int, default=3, help="Maximum listing pages per category/source.")
     parser.add_argument("--database", default="movies.sqlite3", help="SQLite database path.")
     parser.add_argument("--output", default="scraped_movies.json", help="JSON output path.")
     return parser
@@ -49,7 +49,8 @@ def main() -> int:
 
     results: list[dict[str, Any]] = []
     for url in source_urls:
-        results.extend(scrape_source(url))
+        results.extend(scrape_source(url, max_pages=args.pages))
+    results = list({item["url"]: item for item in results if item.get("url")}.values())
 
     with closing(connect(args.database)) as connection:
         saved = save_movies(connection, results)
