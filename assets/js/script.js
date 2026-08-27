@@ -647,6 +647,7 @@ if(searchInput){
 if (document.getElementById('gallery')) {
   loadScrapedCatalog()
     .finally(() => {
+      refreshFeaturedFromCatalog();
       setCatalogSeo();
       void render();
     });
@@ -694,6 +695,16 @@ function updateHero(movie = activeFeaturedMovie){
   if(desc) desc.textContent = movie.short || movie.synopsis;
   if(kicker) kicker.textContent = `New ${movie.type === 'animation' ? 'Animation' : movie.type === 'drama' ? 'Drama' : 'Movie'}`;
   document.querySelectorAll('.hero-dot').forEach((dot, index) => dot.setAttribute('aria-selected', String(index === featuredIndex)));
+}
+
+function refreshFeaturedFromCatalog(){
+  featuredMovies.splice(0, featuredMovies.length, ...items.slice(0, 5));
+  activeFeaturedMovie = featuredMovies[0] || items[0];
+  const dots = document.querySelector('.hero-dots');
+  if(dots){
+    dots.innerHTML = featuredMovies.map((movie, index) => `<button class="hero-dot" type="button" role="tab" aria-label="Show ${movie.title}" aria-selected="${index === 0}"></button>`).join('');
+  }
+  updateHero(activeFeaturedMovie);
 }
 
 if(featuredMovies.length){
